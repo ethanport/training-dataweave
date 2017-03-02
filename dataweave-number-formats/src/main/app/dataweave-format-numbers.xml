@@ -1,0 +1,761 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:client="http://www.mulesoft.org/schema/mule/client"
+      xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf"
+      xmlns:management="http://www.mulesoft.org/schema/mule/management"
+      xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+      xmlns:sxc="http://www.mulesoft.org/schema/mule/sxc"
+      xmlns:mule-xml="http://www.mulesoft.org/schema/mule/xml"
+    xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.8/mule.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.8/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/3.8/mule-http.xsd
+http://www.mulesoft.org/schema/mule/client http://www.mulesoft.org/schema/mule/client/3.8/mule-client.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/3.8/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/management http://www.mulesoft.org/schema/mule/management/3.8/mule-management.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/3.8/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/sxc http://www.mulesoft.org/schema/mule/sxc/3.8/mule-sxc.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/3.8/mule-xml.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="numberFormatExamples">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <enricher target="flowVars.dw0" doc:name="Set flowVars.dw1 with DW payload output">
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+---
+using (theNumber = 1234.56, theInteger=12345) {
+double0: theNumber,
+double1: theNumber
+as :number as :string {format: "#,###"},
+
+Adouble1: theNumber
+as :number as :number {format: "#,###"},
+
+double2: (theNumber + 0.2) as :number as :string {format: "#"},
+Adouble2: (theNumber + 0.2) as :number {format: "#"},
+
+double3: theNumber as :number as :string {format: "#,###.00"},
+Adouble3: theNumber as :number {format: "#,###.00"},
+
+double4: theNumber as :number as :string {format: "#,###.##"},
+Adouble4: theNumber as :number {format: "#,###.##"},
+
+double5: theNumber as :number as :string {format: "#,###.###"},
+Adouble5: theNumber as :number {format: "#,###.###"},
+
+double6: theNumber as :number 
+{class: "java.lang.Integer"} as :string {format: "#,###.000"},
+Adouble6: theNumber as :number 
+{class: "java.lang.Integer"} as :number {format: "#,###.000"},
+int1: theInteger as :number as :string {format: "#,###"},
+Aint1: theInteger as :number {format: "#,###"},
+
+int2: theInteger as :number as :string {format: "#,###.##"},
+Aint2: theInteger as :number {format: "#,###.##"},
+
+int3: theInteger as :number as :string {format: "#,###.00"},
+Aint3: theInteger as :number {format: "#,###.00"},
+
+int4: theInteger as :number as :string {format: "#,###.000"},
+Aint4: theInteger as :number {format: "#,###.000"}
+
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </enricher>
+        <dw:transform-message doc:name="Format Numbers">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+payload]]></dw:set-payload>
+            <dw:set-variable variableName="dw1FormatDecimalAsString"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"x is ": x as :string,
+	
+	"round to integer" :
+	x as :string {format: "\$#,###"},
+	
+	"round to 2 decimal places" :
+	x as :string {format: "#,##0.0#"}, 
+	
+	"round to 3 decimal places" :
+	x  as :string {format: "#,###.###"},
+	
+	"round to 4 decimal places" :
+	x as :string {format: "#,###.####"}
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw2FormatDecimal"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"x is ": x as :string,
+	
+	"round to integer" :
+	x as :string {format: "\$#,###"} as :number {format: "\$#,###"},
+	
+	"round to 2 decimal places" :
+	x as :string {format: "#,##0.0#"} as :mynumber, 
+	
+	"round to 3 decimal places" :
+	x  as :string {format: "#,###.###"} as :mynumber,
+	
+	"round to 4 decimal places" :
+	x as :string {format: "#,###.####"} as :mynumber
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw3FormatIntAsStiring"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 2 decimal places #,##0.00#" : 
+	y as :string {format: "#,##0.00#"},
+	
+	"round and pad to 3 decimal places #,###.000" : 
+	y as :string {format: "#,###.000"},
+	
+	"0.7129 round and pad to 3 decimal places #,###.000" : 
+	0.7129 as :string {format: "#,###.000"},
+	
+	"0.7129 round and pad to 3 decimal places, format as 0.xxx #,##0.000" : 
+	0.7129 as :string {format: "#,##0.000"}
+	
+	
+
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw4FormatInteger"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 2 decimal places #,##0.00#" : 
+	y as :string {format: "#,##0.00#"} as :mynumber,
+	
+	"round and pad to 3 decimal places #,###.000" : 
+	y as :string {format: "#,###.000"} as :mynumber,
+	
+	"0.7129 round and pad to 3 decimal places #,###.000" : 
+	0.7129 as :string {format: "#,###.000"} as :mynumber,
+	
+	"0.7129 round and pad to 3 decimal places, format as 0.xxx #,##0.000" : 
+	0.7129 as :string {format: "#,##0.000"} as :mynumber
+	
+	
+
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw5RoundingDecimals"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456, theDecimal=1233467.801) {
+	
+	"theDecimal = ": theDecimal,
+	
+	"Floor a Decimal, round to 2 decimal places, pad to 1 decimal place, as :mynumber" : 
+	(floor theDecimal) as :string {format: "#,###.0#"} as :mynumber,
+	
+	"Floor a Decimal, round to 2 decimal places, pad to 2 decimal place, as :mynumber" : 
+	(floor theDecimal) as :string {format: "#,###.00"} as :mynumber,
+		
+		
+	"Round a Decimal, pad to 2 decimal place, as :mynumber" : 
+	(round theDecimal) as :string {format: "#,###.00"} as :mynumber,
+	
+	"Round a decimal with string format, as :number {format: #,###} ": 
+	theDecimal as :string {format: "####"} as :number
+	{class: "java.lang.Integer"} as :number {format: "#,###"},
+	
+	"Complex: Round a decimal, as :number {format: #,###.00}": 
+	theDecimal as :string {format: "#,###"} 
+	as :number {format: "#,###"} as :string {format: "#,###.00"}
+	as :number {format: "#,###"}, 
+	
+	"Round a decimal as java.lang.Integer, as :number {format: #,###.00}": 
+	1234567.89 as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###"} 
+	as :number {format: "#,###"} as :string {format: "#,###.00"}
+	as :number {format: "#,###.##"}
+	
+
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw6TryDecimalsAsjava.lang.Integer"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456, theDecimal=1233467.801) {
+	
+	"comment:": "java.lang.Integer only works with strings or int, not double (decimal)",
+	
+	"theDecimal = ": theDecimal,
+	
+	"Still a Decimal, round to 2 decimal places in string, pad 1 decimal place, 
+	as :mynumber" : 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} as :mynumber,
+
+	
+	//"Bad Format! Floor a Decimal, round to 2 decimal places, 
+	// pad to 2 decimal place, as :mynumber" : 
+	//(floor theDecimal) as :string {format: "#,###.#0"} as :mynumber,
+	
+	"Still a Decimal, round to 2 decimal places, pad 1 decimal place 
+	- then format as number #,###.0000" : 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} 
+	as :number {format: "#,###.0000"},
+	
+	
+	"Round to 2 decimal places in string, as :mynumber": 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.00"} 
+	as :mynumber, //{format: "#,###.000"}
+	
+	
+	"Round to 0 decimal places in :number #,###": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :mynumber , //{format: "#,###"},
+		
+	
+	
+	"Coerce as :string, round to 0 decimal places": 
+	theDecimal as :string 
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###"},
+	
+	"Coerce as :number, round to 0 decimal places": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###"},
+	
+	"Coerce as :number, format #": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :number {format: "#"},
+	
+	
+	"convert to Integer fails": 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###.000"}
+	
+		
+	"convert 123.406 to Integer2 fails": 
+	123.406 as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} 
+	as :mynumber //{format: "#,###.000"}
+	
+
+	
+
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw7FormatDecimal"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+%type nocommanumber = :number {format: "####"}
+---
+using (x = 1234567.89, y = 789789780, z = 0.9889)
+{
+	"x is ": x,
+	
+	"#,### round to 4 decimal places, display at least 2 decimal places" :
+	x as :string {format: "#,###.00##"} as :mynumber,
+	
+	"#### round to 4 decimal places, display at least 2 decimal places" :
+	x as :string {format: "#,###.00##"} as :nocommanumber,
+	
+	"round to 4 decimal places, display to 4 decimal places" :
+	x as :string {format: "#,###.0000"} as :mynumber, 
+	
+	"round to 3 decimal places, display to 3 decimal places, show 0.xxxx" :
+	x as :string {format: "#,##0.000"} as :mynumber,
+	
+	"#,##0.00 round 0.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	0.709 as :string {format: "#,##0.00"} as :mynumber,
+	
+	"#### #,##0.00 round 123.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	123.709 as :string {format: "#,##0.00"} as :nocommanumber,
+	
+	"#### #,##0.00 round 1234.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	1234.709 as :string {format: "#,##0.00"} as :nocommanumber,
+	
+	"#,###.0# round 0.701 to 2 decimal places, pad first digit, show 0.xxxx" :
+	0.701 as :string {format: "#,###.0#"} as :mynumber
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw8PaddingIntegers"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	y as :string {format: "#,###.0##"} as :mynumber,
+	
+	"0.7001 round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	0.7001 as :string {format: "#,###.0##"} as :number {format: "#,###"},
+	
+	"0.7001 round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	0.7001 as :string {format: "#,###.0##"},
+	
+	"round to 3 decimal places, don't pad any decimal places #,###.###" :
+	y as :string {format: "#,###.###"},
+	
+	"0.7988 round to 3 decimal places, don't pad any decimal places #,###.###" :
+	0.7988 as :string {format: "#,###.###"}
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw9FormatFractionsAndPercents"><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"z=0.9889": z,
+	
+	"format #,###.00":
+	z as :number as :string {format: "#,###.00"},
+	
+	"format #,##0.00":
+	z as :number as :string {format: "#,##0.00"},
+	
+	"format #,###.000%":
+	z as :number as :string {format: "#,###.000%"}, 
+	
+	"format #,###.00#%":
+	z as :number as :string {format: "#,###.00#%"}
+}]]></dw:set-variable>
+            <dw:set-variable variableName="dw10AsNumber"><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456) {
+	
+	"theNumber = ": theNumber,
+	
+	"double #,###": theNumber as :number {format: "#,###"},
+	
+	"double #": (theNumber + 0.2) as :number {format: "#"},
+	
+	"double #,###.00": theNumber as :number {format: "#,###.00"},
+	
+	"double #,###.##": theNumber as :number {format: "#,###.##"},
+	
+	"double #,###.###": theNumber as :number {format: "#,###.###"},
+	
+	"theInteger = ": theInteger,
+	
+	"integer #,###": theInteger as :number {format: "#,###"},
+	
+	"integer #,###.##": theInteger as :number {format: "#,###.##"},
+	
+	"integer #,###.00": theInteger as :number {format: "#,###.00"},
+	
+	"integer #,###.00": theInteger as :number {format: "#,###.000"}
+}]]></dw:set-variable>
+        </dw:transform-message>
+        <set-payload value="#[   &quot;{ DataWeave output is:  [ &quot;
++ flowVars.dw1FormatDecimalAsString  + &quot;,&quot; 
++ flowVars.dw2FormatDecimal  + &quot;,&quot; 
++ flowVars.dw3FormatIntAsStiring  + &quot;,&quot; 
++ flowVars.dw4FormatInteger + &quot;,&quot; 
++ flowVars.dw5RoundingDecimals + &quot;,&quot;  
++ flowVars.'dw6TryDecimalsAsjava.lang.Integer' + &quot;,&quot; 
++ flowVars.dw7FormatDecimal + &quot;,&quot; 
++ flowVars.dw8PaddingIntegers + &quot;,&quot; 
++ flowVars.dw9FormatFractionsAndPercents + &quot;,&quot; 
++ flowVars.dw10AsNumber + &quot;]}&quot;  ]" doc:name="Set Payload to DW results" mimeType="application/json"/>
+    </flow>
+    <flow name="Copy_of_numbersFlow">
+        <dw:transform-message doc:name="Copy_of_Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+---
+using (theNumber = 1234.56, theInteger=12345) {
+double0: theNumber,
+double1: theNumber
+as :number as :string {format: "#,###"},
+
+Adouble1: theNumber
+as :number as :number {format: "#,###"},
+
+double2: (theNumber + 0.2) as :number as :string {format: "#"},
+Adouble2: (theNumber + 0.2) as :number {format: "#"},
+
+double3: theNumber as :number as :string {format: "#,###.00"},
+Adouble3: theNumber as :number {format: "#,###.00"},
+
+double4: theNumber as :number as :string {format: "#,###.##"},
+Adouble4: theNumber as :number {format: "#,###.##"},
+
+double5: theNumber as :number as :string {format: "#,###.###"},
+Adouble5: theNumber as :number {format: "#,###.###"},
+
+double6: theNumber as :number 
+{class: "java.lang.Integer"} as :string {format: "#,###.000"},
+Adouble6: theNumber as :number 
+{class: "java.lang.Integer"} as :number {format: "#,###.000"},
+int1: theInteger as :number as :string {format: "#,###"},
+Aint1: theInteger as :number {format: "#,###"},
+
+int2: theInteger as :number as :string {format: "#,###.##"},
+Aint2: theInteger as :number {format: "#,###.##"},
+
+int3: theInteger as :number as :string {format: "#,###.00"},
+Aint3: theInteger as :number {format: "#,###.00"},
+
+int4: theInteger as :number as :string {format: "#,###.000"},
+Aint4: theInteger as :number {format: "#,###.000"}
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format Decimal as String">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"x is ": x as :string,
+	
+	"round to integer" :
+	x as :string {format: "\$#,###"},
+	
+	"round to 2 decimal places" :
+	x as :string {format: "#,##0.0#"}, 
+	
+	"round to 3 decimal places" :
+	x  as :string {format: "#,###.###"},
+	
+	"round to 4 decimal places" :
+	x as :string {format: "#,###.####"}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format Decimal">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"x is ": x as :string,
+	
+	"round to integer" :
+	x as :string {format: "\$#,###"} as :number {format: "\$#,###"},
+	
+	"round to 2 decimal places" :
+	x as :string {format: "#,##0.0#"} as :mynumber, 
+	
+	"round to 3 decimal places" :
+	x  as :string {format: "#,###.###"} as :mynumber,
+	
+	"round to 4 decimal places" :
+	x as :string {format: "#,###.####"} as :mynumber
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format Integer as String">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 2 decimal places #,##0.00#" : 
+	y as :string {format: "#,##0.00#"},
+	
+	"round and pad to 3 decimal places #,###.000" : 
+	y as :string {format: "#,###.000"},
+	
+	"0.7129 round and pad to 3 decimal places #,###.000" : 
+	0.7129 as :string {format: "#,###.000"},
+	
+	"0.7129 round and pad to 3 decimal places, format as 0.xxx #,##0.000" : 
+	0.7129 as :string {format: "#,##0.000"}
+	
+	
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format Integer">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 2 decimal places #,##0.00#" : 
+	y as :string {format: "#,##0.00#"} as :mynumber,
+	
+	"round and pad to 3 decimal places #,###.000" : 
+	y as :string {format: "#,###.000"} as :mynumber,
+	
+	"0.7129 round and pad to 3 decimal places #,###.000" : 
+	0.7129 as :string {format: "#,###.000"} as :mynumber,
+	
+	"0.7129 round and pad to 3 decimal places, format as 0.xxx #,##0.000" : 
+	0.7129 as :string {format: "#,##0.000"} as :mynumber
+	
+	
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_rounding decimals">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456, theDecimal=1233467.801) {
+	
+	"theDecimal = ": theDecimal,
+	
+	"Floor a Decimal, round to 2 decimal places, pad to 1 decimal place, as :mynumber" : 
+	(floor theDecimal) as :string {format: "#,###.0#"} as :mynumber,
+	
+	"Floor a Decimal, round to 2 decimal places, pad to 2 decimal place, as :mynumber" : 
+	(floor theDecimal) as :string {format: "#,###.00"} as :mynumber,
+		
+		
+	"Round a Decimal, pad to 2 decimal place, as :mynumber" : 
+	(round theDecimal) as :string {format: "#,###.00"} as :mynumber,
+	
+	"Round a decimal with string format, as :number {format: #,###} ": 
+	theDecimal as :string {format: "####"} as :number
+	{class: "java.lang.Integer"} as :number {format: "#,###"},
+	
+	"Complex: Round a decimal, as :number {format: #,###.00}": 
+	theDecimal as :string {format: "#,###"} 
+	as :number {format: "#,###"} as :string {format: "#,###.00"}
+	as :number {format: "#,###"}, 
+	
+	"Round a decimal as java.lang.Integer, as :number {format: #,###.00}": 
+	1234567.89 as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###"} 
+	as :number {format: "#,###"} as :string {format: "#,###.00"}
+	as :number {format: "#,###.##"}
+	
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_Try Decimal as java.lang.Integer to Int">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456, theDecimal=1233467.801) {
+	
+	"comment:": "java.lang.Integer only works with strings or int, not double (decimal)",
+	
+	"theDecimal = ": theDecimal,
+	
+	"Still a Decimal, round to 2 decimal places in string, pad 1 decimal place, 
+	as :mynumber" : 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} as :mynumber,
+
+	
+	//"Bad Format! Floor a Decimal, round to 2 decimal places, 
+	// pad to 2 decimal place, as :mynumber" : 
+	//(floor theDecimal) as :string {format: "#,###.#0"} as :mynumber,
+	
+	"Still a Decimal, round to 2 decimal places, pad 1 decimal place 
+	- then format as number #,###.0000" : 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} 
+	as :number {format: "#,###.0000"},
+	
+	
+	"Round to 2 decimal places in string, as :mynumber": 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.00"} 
+	as :mynumber, //{format: "#,###.000"}
+	
+	
+	"Round to 0 decimal places in :number #,###": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :mynumber , //{format: "#,###"},
+		
+	
+	
+	"Coerce as :string, round to 0 decimal places": 
+	theDecimal as :string 
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###"},
+	
+	"Coerce as :number, round to 0 decimal places": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###"},
+	
+	"Coerce as :number, format #": 
+	theDecimal as :number 
+	{class: "java.lang.Integer"} as :number {format: "#"},
+	
+	
+	"convert to Integer fails": 
+	theDecimal as :number
+	{class: "java.lang.Integer"} as :mynumber, //{format: "#,###.000"}
+	
+		
+	"convert 123.406 to Integer2 fails": 
+	123.406 as :number
+	{class: "java.lang.Integer"} as :string {format: "#,###.0#"} 
+	as :mynumber //{format: "#,###.000"}
+	
+
+	
+
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format Decimal">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+%type nocommanumber = :number {format: "####"}
+---
+using (x = 1234567.89, y = 789789780, z = 0.9889)
+{
+	"x is ": x,
+	
+	"#,### round to 4 decimal places, display at least 2 decimal places" :
+	x as :string {format: "#,###.00##"} as :mynumber,
+	
+	"#### round to 4 decimal places, display at least 2 decimal places" :
+	x as :string {format: "#,###.00##"} as :nocommanumber,
+	
+	"round to 4 decimal places, display to 4 decimal places" :
+	x as :string {format: "#,###.0000"} as :mynumber, 
+	
+	"round to 3 decimal places, display to 3 decimal places, show 0.xxxx" :
+	x as :string {format: "#,##0.000"} as :mynumber,
+	
+	"#,##0.00 round 0.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	0.709 as :string {format: "#,##0.00"} as :mynumber,
+	
+	"#### #,##0.00 round 123.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	123.709 as :string {format: "#,##0.00"} as :nocommanumber,
+	
+	"#### #,##0.00 round 1234.709 to 2 decimal places, display to 4 decimal places, show 0.xxxx" :
+	1234.709 as :string {format: "#,##0.00"} as :nocommanumber,
+	
+	"#,###.0# round 0.701 to 2 decimal places, pad first digit, show 0.xxxx" :
+	0.701 as :string {format: "#,###.0#"} as :mynumber
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_padding integers">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"integer y = " : y,
+	
+	"round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	y as :string {format: "#,###.0##"} as :mynumber,
+	
+	"0.7001 round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	0.7001 as :string {format: "#,###.0##"} as :number {format: "#,###"},
+	
+	"0.7001 round to 3 decimal places, pad to 1 decimal place #,###.0##" :
+	0.7001 as :string {format: "#,###.0##"},
+	
+	"round to 3 decimal places, don't pad any decimal places #,###.###" :
+	y as :string {format: "#,###.###"},
+	
+	"0.7988 round to 3 decimal places, don't pad any decimal places #,###.###" :
+	0.7988 as :string {format: "#,###.###"}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_format fractions and percents">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload plain/text
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (x = 123123456.709, y = 789789780, z = 0.9889)
+{
+	"z=0.9889": z,
+	
+	"format #,###.00":
+	z as :number as :string {format: "#,###.00"},
+	
+	"format #,##0.00":
+	z as :number as :string {format: "#,##0.00"},
+	
+	"format #,###.000%":
+	z as :number as :string {format: "#,###.000%"}, 
+	
+	"format #,###.00#%":
+	z as :number as :string {format: "#,###.00#%"}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Copy_of_as :number">
+            <dw:set-payload><![CDATA[%dw 1.0
+%input payload application/json
+%output application/json
+%type mynumber = :number {format: "#,###"}
+---
+using (theNumber = 123123456.709, theInteger=123123456) {
+	
+	"theNumber = ": theNumber,
+	
+	"double #,###": theNumber as :number {format: "#,###"},
+	
+	"double #": (theNumber + 0.2) as :number {format: "#"},
+	
+	"double #,###.00": theNumber as :number {format: "#,###.00"},
+	
+	"double #,###.##": theNumber as :number {format: "#,###.##"},
+	
+	"double #,###.###": theNumber as :number {format: "#,###.###"},
+	
+	"theInteger = ": theInteger,
+	
+	"integer #,###": theInteger as :number {format: "#,###"},
+	
+	"integer #,###.##": theInteger as :number {format: "#,###.##"},
+	
+	"integer #,###.00": theInteger as :number {format: "#,###.00"},
+	
+	"integer #,###.00": theInteger as :number {format: "#,###.000"}
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+
+</mule>
