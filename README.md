@@ -1,5 +1,5 @@
 # training-dataweave
-DataWeave examples for MuleSoft training courses
+DataWeave examples for MuleSoft training courses. 
 
 This is an example Mule project that demonstrates how to apply various formatting to numbers in DataWeave. 
 
